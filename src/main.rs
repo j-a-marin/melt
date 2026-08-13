@@ -17,7 +17,7 @@ fn main() {
         world.update(survivor_observation);
         world.update(water_observation);
 
-        let actions = world.candidate_actions();
+        let actions = world.generate_candidates();
 
         println!("{world:#?}");
         println!("CANDIDATE ACTIONS: {actions:#?}");

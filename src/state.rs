@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::action::Action;
+use crate::action::{Action, CandidateAction};
 use crate::observation::{Observation, ObservationPayload};
 
 #[derive(Debug)]
@@ -20,8 +20,8 @@ impl WorldState {
             .insert(observation.source_id.clone(), observation);
     }
 
-    pub fn candidate_actions(&self) -> Vec<Action> {
-        let mut actions: Vec<Action> = Vec::new();
+    pub fn generate_candidates(&self) -> Vec<CandidateAction> {
+        let mut actions: Vec<CandidateAction> = Vec::new();
 
         for observation in self.latest.values() {
             match &observation.payload {
@@ -33,21 +33,34 @@ impl WorldState {
                     if observation.confidence >= 0.80
                         && (*spectral_anomaly > 0.70 || *turbidity > 0.70)
                     {
-                        actions.push(Action::InvestigateWater {
-                            source_id: observation.source_id.clone(),
-                            reason: format!(
-                                "water anomaly detected: spectral={:.2}, turbidity={:.2}",
-                                spectral_anomaly, turbidity,
-                            ),
+                        actions.push(CandidateAction {
+                            action: Action::InvestigateWater {
+                                source_id: observation.source_id.clone(),
+                                reason: format!(
+                                    "water anomaly detected: spectral={:.2}, turbidity={:.2}",
+                                    spectral_anomaly, turbidity,
+                                ),
+                            },
+                            confidence: observation.confidence,
+                            score: None,
+                            feasible: None,
                         });
                     }
                 }
 
                 ObservationPayload::SurvivorSignal { strength } => {
                     if observation.confidence >= 0.80 && *strength > 0.75 {
-                        actions.push(Action::InvestigateSurvivorSignal {
-                            source_id: observation.source_id.clone(),
-                            reason: format!("survivor signal detected: strength={:.2}", strength),
+                        actions.push(CandidateAction {
+                            action: Action::InvestigateSurvivorSignal {
+                                source_id: observation.source_id.clone(),
+                                reason: format!(
+                                    "survivor signal detected: strength={:.2}",
+                                    strength,
+                                ),
+                            },
+                            confidence: observation.confidence,
+                            score: None,
+                            feasible: None,
                         });
                     }
                 }
@@ -55,8 +68,16 @@ impl WorldState {
                 _ => {}
             }
         }
+
         if actions.is_empty() {
-            actions.push(Action::Hold);
+            actions.push(CandidateAction {
+                action: Action::Hold,
+                confidence: 1.0,
+                score: None,
+                feasible: None,
+            });
         }
+
         actions
-    }}
+    }
+}
