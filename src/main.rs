@@ -16,6 +16,10 @@ fn main() {
         let water_observation = water_sensor.observe();
         world.update(survivor_observation);
         world.update(water_observation);
+
+        let action = world.next_action();
+
         println!("{world:#?}");
+        println!("NEXT ACTION: {action:#?}");
     }
 }
