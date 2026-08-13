@@ -1,8 +1,10 @@
 mod action;
+mod constraint;
 mod observation;
 mod sensor;
 mod state;
 
+use crate::constraint::Constraint;
 use sensor::{MockDrone, MockWaterSensor, Sensor};
 use state::WorldState;
 
@@ -17,9 +19,15 @@ fn main() {
         world.update(survivor_observation);
         world.update(water_observation);
 
-        let actions = world.generate_candidates();
+        let mut candidates = world.generate_candidates();
 
         println!("{world:#?}");
-        println!("CANDIDATE ACTIONS: {actions:#?}");
+
+        let constraint = Constraint::MinimumConfidence(0.88);
+
+        for candidate in &mut candidates {
+            candidate.evaluate_feasibility(&constraint);
+        }
+        println!("CANDIDATE ACTIONS: {candidates:#?}");
     }
 }

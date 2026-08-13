@@ -1,3 +1,5 @@
+use crate::constraint::Constraint;
+
 #[derive(Debug, Clone)]
 pub enum Action {
     InvestigateWater { source_id: String, reason: String },
@@ -11,4 +13,14 @@ pub struct CandidateAction {
     pub confidence: f64,
     pub score: Option<f64>,
     pub feasible: Option<bool>,
+}
+
+impl CandidateAction {
+    pub fn evaluate_feasibility(&mut self, constraint: &Constraint) {
+        match constraint {
+            Constraint::MinimumConfidence(minimum) => {
+                self.feasible = Some(self.confidence >= *minimum);
+            }
+        }
+    }
 }
