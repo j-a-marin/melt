@@ -30,8 +30,6 @@ fn main() {
 
         let mut candidates = world.generate_candidates();
 
-        let constraint = Constraint::MinimumConfidence(0.88);
-
         for candidate in &mut candidates {
             candidate.evaluate_feasibility(&constraint);
             if candidate.feasible == Some(true) {

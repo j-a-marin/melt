@@ -1,17 +1,17 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::action::{Action, CandidateAction};
 use crate::observation::{Observation, ObservationPayload};
 
 #[derive(Debug)]
 pub struct WorldState {
-    pub latest: HashMap<String, Observation>,
+    pub latest: BTreeMap<String, Observation>,
 }
 
 impl WorldState {
     pub fn new() -> Self {
         Self {
-            latest: HashMap::new(),
+            latest: BTreeMap::new(),
         }
     }
 
