@@ -11,9 +11,9 @@ mod render;
 use crate::constraint::Constraint;
 use planner::select_best;
 use policy::{Policy, RescuePolicy};
+use render::render_cycle;
 use sensor::{MockDrone, MockWaterSensor, Sensor};
 use state::WorldState;
-use render::render_cycle;
 
 fn main() {
     let mut drone = MockDrone::new("drone-01", 34.0219, -118.4814);
@@ -22,7 +22,7 @@ fn main() {
     let constraint = Constraint::MinimumConfidence(0.88);
     let policy = RescuePolicy;
 
-    for cycle in 1..=5 {
+    for cycle in 1..=6 {
         let survivor_observation = drone.observe();
         let water_observation = water_sensor.observe();
         world.update(survivor_observation);
@@ -42,11 +42,8 @@ fn main() {
         // println!("{world:#?}");
         let selected = select_best(&candidates);
 
-       let output = render_cycle(
-           cycle,
-           2, &candidates, selected,);
+        let output = render_cycle(cycle, 2, &candidates, selected);
 
-       println!("{output}");
-
+        println!("{output}");
     }
 }

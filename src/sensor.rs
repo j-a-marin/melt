@@ -52,6 +52,12 @@ impl Sensor for MockWaterSensor {
             _ => 0.50,
         };
 
+        let confidence = match self.step {
+            2 => 0.85,
+            6 => 0.92,
+            _ => 0.85,
+        };
+
         let spectral_anomaly = match self.step % 5 {
             0 => 0.10,
             1 => 0.25,
@@ -65,7 +71,7 @@ impl Sensor for MockWaterSensor {
             timestamp: self.step,
             x: self.x,
             y: self.y,
-            confidence: 0.85,
+            confidence,
             payload: ObservationPayload::WaterReading {
                 surface_temp_c,
                 turbidity,

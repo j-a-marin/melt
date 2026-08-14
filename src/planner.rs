@@ -8,10 +8,7 @@ pub fn select_best(candidates: &[CandidateAction]) -> Option<&CandidateAction> {
         .max_by(|a, b| {
             a.score
                 .expect("filtered to scored candidates")
-                .partial_cmp(
-                    &b.score
-                        .expect("scores should not be NaN"),
-                )
+                .partial_cmp(&b.score.expect("scores should not be NaN"))
                 .expect("scores should not be NaN")
         })
 }
