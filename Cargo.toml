@@ -2,5 +2,10 @@
 name = "melt"
 version = "0.1.0"
 edition = "2024"
+description = "A constrained planning framework for multisensor environments"
+repository = "https://github.com/j-a-marin/melt"
+license = "MIT OR Apache-2.0"
+keywords = ["planning", "sensors", "robotics", "decision-making"]
+categories = ["science::robotics"]
 
 [dependencies]
