@@ -34,4 +34,9 @@ pub enum ObservationPayload {
         continuity: bool,
         voltage: bool,
     },
+
+    HumanFieldReport {
+        category: String,
+        what_changed: String,
+    },
 }
