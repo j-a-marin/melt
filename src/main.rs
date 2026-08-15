@@ -11,6 +11,7 @@ mod planner;
 mod render;
 
 use crate::constraint::Constraint;
+use crate::decision_record::DecisionRecord;
 use planner::select_best;
 use policy::{Policy, RescuePolicy};
 use render::render_cycle;
@@ -41,6 +42,13 @@ fn main() {
         }
         // println!("{world:#?}");
         let selected = select_best(&candidates);
+
+        use decision_record::DecisionRecord;
+        let _record = DecisionRecord {
+            cycle,
+            candidates: candidates.clone(),
+            selected: selected.cloned(),
+        };
 
         let output = render_cycle(cycle, 2, &candidates, selected);
 
