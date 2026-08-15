@@ -20,7 +20,7 @@ impl WorldState {
             .insert(observation.source_id.clone(), observation);
     }
 
-    pub fn generate_candidates(&self) -> Vec<CandidateAction> {
+    pub fn derive_candidates(&self) -> Vec<CandidateAction> {
         let mut actions: Vec<CandidateAction> = Vec::new();
 
         for observation in self.latest.values() {

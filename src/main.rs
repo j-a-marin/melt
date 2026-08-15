@@ -5,6 +5,8 @@ mod policy;
 mod sensor;
 mod state;
 
+mod decision_record;
+mod ingress;
 mod planner;
 mod render;
 
@@ -28,7 +30,7 @@ fn main() {
         world.update(survivor_observation);
         world.update(water_observation);
 
-        let mut candidates = world.generate_candidates();
+        let mut candidates = world.derive_candidates();
 
         for candidate in &mut candidates {
             candidate.evaluate_feasibility(&constraint);
