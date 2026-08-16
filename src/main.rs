@@ -5,13 +5,18 @@ mod policy;
 mod sensor;
 mod state;
 
+mod beacon;
 mod decision_record;
+mod exposure;
+mod falsifier;
 mod ingress;
+mod latent_state;
 mod planner;
 mod render;
+mod transmission;
+mod planning_beacon;
 
 use crate::constraint::Constraint;
-use crate::decision_record::DecisionRecord;
 use planner::select_best;
 use policy::{Policy, RescuePolicy};
 use render::render_cycle;

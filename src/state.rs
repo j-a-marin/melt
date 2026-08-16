@@ -5,6 +5,7 @@ use crate::observation::{Observation, ObservationPayload};
 
 #[derive(Debug)]
 pub struct WorldState {
+    pub history: Vec<Observation>,
     pub latest: BTreeMap<String, Observation>,
 }
 
@@ -12,12 +13,22 @@ impl WorldState {
     pub fn new() -> Self {
         Self {
             latest: BTreeMap::new(),
+            history: Vec::new(),
         }
     }
 
     pub fn update(&mut self, observation: Observation) {
+        self.history.push(observation.clone());
         self.latest
             .insert(observation.source_id.clone(), observation);
+
+    }
+    pub fn last_two(&self, source_id: &str) -> Option<(&Observation, &Observation)> {
+        let mut it = self.history.iter().rev().
+            filter(|o| o.source_id == source_id);
+        let newest = it.next()?;
+        let prior = it.next()?;
+        Some((prior, newest))
     }
 
     pub fn derive_candidates(&self) -> Vec<CandidateAction> {
