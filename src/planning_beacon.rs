@@ -14,8 +14,10 @@ impl Beacon for PlanningBeacon {
 
     fn infer_state(&self, observations: &[Self::Observation]) -> Self::State {
         let mut world = WorldState::new();
-        for observation in observations {
-            world.update(observation.clone());
+        let mut ordered = observations.to_vec();
+        ordered.sort_by_key(|o| o.timestamp);
+        for observation in ordered {
+            world.update(observation);
         }
         world
     }
@@ -40,7 +42,13 @@ impl Beacon for PlanningBeacon {
                         Motion::Stable
                     }
                 }
-                _ => Motion::Unassessed,
+                _ => {
+                    if std::mem::discriminant(&prior.payload) != std::mem::discriminant(&newest.payload) {
+                        Motion::Discontinuous
+                    } else {
+                        Motion::Unassessed
+                    }
+                }
             },
         }
     }
@@ -73,5 +81,40 @@ impl Beacon for PlanningBeacon {
             }
         }
         falsifiers
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::observation::Observation;
+    use super::*;
+    #[test]
+    fn motion_is_unassessed_with_no_observations() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[]);
+        assert_eq!(beacon.motion(&world), Motion::Unassessed)
+    }
+
+    fn obs(timestamp: u64, strength: f64) -> Observation {
+        Observation {
+            source_id: "drone-01".to_string(),
+            timestamp,
+            x: 0.0,
+            y: 0.0,
+            confidence: 0.9,
+            payload: ObservationPayload::SurvivorSignal { strength },
+        }
+    }
+    #[test]
+    fn motion_strengthening_when_signal_rises() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[ obs(1, 0.40), obs(2, 0.80) ]);
+        assert_eq!(beacon.motion(&world), Motion::Strengthening)
+    }
+    #[test]
+    fn motion_respects_timestamps_not_arrival_order(){
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[obs(2, 0.80), obs(1, 0.40)]);
+        assert_eq!(beacon.motion(&world), Motion::Strengthening)
     }
 }
