@@ -22,19 +22,25 @@ use policy::{Policy, RescuePolicy};
 use render::render_cycle;
 use sensor::{MockDrone, MockWaterSensor, Sensor};
 use state::WorldState;
+use beacon::Beacon;
+use planning_beacon::PlanningBeacon;
+use observation::Observation;
 
 fn main() {
     let mut drone = MockDrone::new("drone-01", 34.0219, -118.4814);
     let mut water_sensor = MockWaterSensor::new("water-01", 34.0195, -118.4900);
-    let mut world = WorldState::new();
+
+    let beacon = PlanningBeacon;
+    let mut all_observations: Vec<Observation> = Vec::new();
     let constraint = Constraint::MinimumConfidence(0.88);
     let policy = RescuePolicy;
 
     for cycle in 1..=6 {
         let survivor_observation = drone.observe();
         let water_observation = water_sensor.observe();
-        world.update(survivor_observation);
-        world.update(water_observation);
+        all_observations.push(survivor_observation);
+        all_observations.push(water_observation);
+        let world = beacon.infer_state(&all_observations);
 
         let mut candidates = world.derive_candidates();
 
@@ -47,6 +53,10 @@ fn main() {
         }
         // println!("{world:#?}");
         let selected = select_best(&candidates);
+
+        println!("motion: {:?} falsifiers open: {}",
+            beacon.motion(&world),
+            beacon.falsifiers(&world).len());
 
         use decision_record::DecisionRecord;
         let _record = DecisionRecord {
