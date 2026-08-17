@@ -1,19 +1,12 @@
 use crate::falsifier::Falsifier;
-use crate::latent_state::{LatentState, Motion};
-use crate::state::WorldState;
-
-pub struct PlanningState {
-    pub latent: LatentState,
-    pub world_state: WorldState
-}
+use crate::latent_state::Motion;
 
 pub trait Beacon {
-    
     type Observation;
     type State;
     type Exposure;
-    
-    fn infer_state(&self, observations: &[Self::Observation]) -> Self::State; 
+
+    fn infer_state(&self, observations: &[Self::Observation]) -> Self::State;
 
     fn motion(&self, state: &Self::State) -> Motion;
 

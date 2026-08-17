@@ -1,9 +1,10 @@
 use crate::beacon::Beacon;
 use crate::falsifier::Falsifier;
 use crate::latent_state::{LatentState, Motion, ObservationId};
-use crate::observation::{Observation, ObservationPayload};
+use crate::observation::ObservationPayload;
 use crate::state::WorldState;
 const EPSILON: f64 = 0.05;
+pub const PRIMARY_SOURCE: &str = "drone-01";
 
 pub struct PlanningBeacon;
 
@@ -21,11 +22,11 @@ impl Beacon for PlanningBeacon {
         }
         let motion = classify_motion(&world);
         let lineage: Vec<ObservationId> = world
-            .last_two("drone-01")
+            .last_two(PRIMARY_SOURCE)
             .map(|(prior, newest)| vec![ObservationId::of(prior), ObservationId::of(newest)])
             .unwrap_or_default();
 
-        let confidence = match world.last_two("drone-01") {
+        let confidence = match world.last_two(PRIMARY_SOURCE) {
             Some((prior, newest)) => (prior.confidence + newest.confidence) / 2.0,
             None => 0.0,
         };
@@ -76,8 +77,9 @@ impl Beacon for PlanningBeacon {
     }
 }
 
+
 fn classify_motion(world: &WorldState) -> Motion {
-    match world.last_two("drone-01") {
+    match world.last_two(PRIMARY_SOURCE) {
         None => Motion::Unassessed,
         Some((prior, newest)) => match (&prior.payload, &newest.payload) {
             (

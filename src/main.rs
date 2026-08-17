@@ -17,17 +17,16 @@ mod transmission;
 mod planning_beacon;
 
 use crate::constraint::Constraint;
+use beacon::Beacon;
+use observation::Observation;
 use planner::select_best;
 use policy::{Policy, RescuePolicy};
 use render::render_cycle;
 use sensor::{MockDrone, MockWaterSensor, Sensor};
-use state::WorldState;
-use beacon::Beacon;
-use planning_beacon::PlanningBeacon;
-use observation::Observation;
+use planning_beacon::{PlanningBeacon, PRIMARY_SOURCE};
 
 fn main() {
-    let mut drone = MockDrone::new("drone-01", 34.0219, -118.4814);
+    let mut drone = MockDrone::new(PRIMARY_SOURCE, 34.0219, -118.4814);
     let mut water_sensor = MockWaterSensor::new("water-01", 34.0195, -118.4900);
 
     let beacon = PlanningBeacon;
