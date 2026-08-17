@@ -9,7 +9,7 @@ pub struct ObservationId {
 #[derive(Debug, Clone)]
 pub struct LatentState {
     pub confidence: f64,
-    pub persistence: f64,
+    pub persistence: u64,
     pub motion: Motion,
     /// EVIDENCE: which observations support this inference.
     pub lineage: Vec<ObservationId>

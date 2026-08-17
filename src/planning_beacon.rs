@@ -1,7 +1,7 @@
 use crate::beacon::Beacon;
 use crate::falsifier::Falsifier;
 use crate::latent_state::{LatentState, Motion, ObservationId};
-use crate::observation::ObservationPayload;
+use crate::observation::{Observation, ObservationPayload};
 use crate::state::WorldState;
 const EPSILON: f64 = 0.05;
 pub const PRIMARY_SOURCE: &str = "drone-01";
@@ -20,7 +20,26 @@ impl Beacon for PlanningBeacon {
         for observation in ordered {
             world.update(observation);
         }
-        let motion = classify_motion(&world);
+
+        let source_obs: Vec<&Observation> = world
+            .history
+            .iter()
+            .filter(|o| o.source_id == PRIMARY_SOURCE)
+            .collect();
+
+        let classifications: Vec<Motion> = source_obs
+            .windows(2)
+            .map(|w| classify_motion(w[0], w[1]))
+            .collect();
+
+        let motion = classifications.last().copied().unwrap_or(Motion::Unassessed);
+
+        let persistence = classifications
+            .iter()
+            .rev()
+            .take_while(|&&m| m == motion)
+            .count() as u64;
+
         let lineage: Vec<ObservationId> = world
             .last_two(PRIMARY_SOURCE)
             .map(|(prior, newest)| vec![ObservationId::of(prior), ObservationId::of(newest)])
@@ -33,7 +52,7 @@ impl Beacon for PlanningBeacon {
         PlanningState {
             latent: LatentState {
                 confidence,
-                persistence: 0.0, // TODO(session 3): ticks the current motion has held
+                persistence,
                 motion,
                 lineage,
             },
@@ -78,10 +97,8 @@ impl Beacon for PlanningBeacon {
 }
 
 
-fn classify_motion(world: &WorldState) -> Motion {
-    match world.last_two(PRIMARY_SOURCE) {
-        None => Motion::Unassessed,
-        Some((prior, newest)) => match (&prior.payload, &newest.payload) {
+fn classify_motion(prior: &Observation, newest: &Observation) -> Motion {
+    match (&prior.payload, &newest.payload) {
             (
                 ObservationPayload::SurvivorSignal {
                     strength: prior_strength,
@@ -105,9 +122,8 @@ fn classify_motion(world: &WorldState) -> Motion {
                     Motion::Unassessed
                 }
             }
-        },
+        }
     }
-}
 
 pub struct PlanningState {
     pub latent: LatentState,
