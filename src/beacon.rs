@@ -1,5 +1,11 @@
 use crate::falsifier::Falsifier;
-use crate::latent_state::Motion;
+use crate::latent_state::{LatentState, Motion};
+use crate::state::WorldState;
+
+pub struct PlanningState {
+    pub latent: LatentState,
+    pub world_state: WorldState
+}
 
 pub trait Beacon {
     

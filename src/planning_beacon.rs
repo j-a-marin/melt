@@ -1,6 +1,6 @@
 use crate::beacon::Beacon;
 use crate::falsifier::Falsifier;
-use crate::latent_state::Motion;
+use crate::latent_state::{LatentState, Motion};
 use crate::observation::ObservationPayload;
 use crate::state::WorldState;
 const EPSILON: f64 = 0.05;
@@ -84,6 +84,11 @@ impl Beacon for PlanningBeacon {
     }
 }
 
+pub struct PlanningState {
+    pub latent: LatentState,
+    pub world: WorldState,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::observation::Observation;
@@ -105,11 +110,62 @@ mod tests {
             payload: ObservationPayload::SurvivorSignal { strength },
         }
     }
+
+    fn obs_water(timestamp: u64) -> Observation {
+        Observation {
+            source_id: "drone-01".to_string(),
+            timestamp,
+            x: 0.0,
+            y: 0.0,
+            confidence: 0.9,
+            payload: ObservationPayload::WaterReading {
+                surface_temp_c: 18.0,
+                turbidity: 0.5,
+                spectral_anomaly: 0.5,
+            },
+        }
+    }
+
     #[test]
     fn motion_strengthening_when_signal_rises() {
         let beacon = PlanningBeacon;
         let world = beacon.infer_state(&[ obs(1, 0.40), obs(2, 0.80) ]);
         assert_eq!(beacon.motion(&world), Motion::Strengthening)
+    }
+
+    #[test]
+    fn motion_weakening_when_signal_falls() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[ obs(1, 0.80), obs(2, 0.40) ]);
+        assert_eq!(beacon.motion(&world), Motion::Weakening)
+    }
+
+    #[test]
+    fn motion_stable_within_deadband() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[ obs(1, 0.50), obs(2, 0.52) ]);
+        assert_eq!(beacon.motion(&world), Motion::Stable) // delta 0.02 < EPSILON 0.05 — deadband absorbs jitter
+    }
+
+    #[test]
+    fn motion_stable_at_exact_epsilon_rising() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[ obs(1, 0.50), obs(2, 0.55) ]);
+        assert_eq!(beacon.motion(&world), Motion::Stable) // delta exactly EPSILON: strict > means this is Stable, deliberately
+    }
+
+    #[test]
+    fn motion_stable_at_exact_epsilon_falling() {
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[ obs(1, 0.55), obs(2, 0.50) ]);
+        assert_eq!(beacon.motion(&world), Motion::Stable) // delta exactly EPSILON: strict < means this is Stable, deliberately
+    }
+
+    #[test]
+    fn motion_discontinuous_when_payload_kind_changed(){
+        let beacon = PlanningBeacon;
+        let world = beacon.infer_state(&[obs(1, 0.80), obs_water(2)]);
+        assert_eq!(beacon.motion(&world), Motion::Discontinuous)
     }
     #[test]
     fn motion_respects_timestamps_not_arrival_order(){
