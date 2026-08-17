@@ -15,6 +15,15 @@ pub struct LatentState {
     pub lineage: Vec<ObservationId>
 }
 
+impl ObservationId {
+    pub fn of(observation: &Observation) -> Self {
+    Self {
+        source_id: observation.source_id.clone(),
+        timestamp: observation.timestamp,
+     }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Motion {
     Strengthening ,

@@ -40,14 +40,14 @@ fn main() {
         let water_observation = water_sensor.observe();
         all_observations.push(survivor_observation);
         all_observations.push(water_observation);
-        let world = beacon.infer_state(&all_observations);
+        let state = beacon.infer_state(&all_observations);
 
-        let mut candidates = world.derive_candidates();
+        let mut candidates = state.world.derive_candidates();
 
         for candidate in &mut candidates {
             candidate.evaluate_feasibility(&constraint);
             if candidate.feasible == Some(true) {
-                let score = policy.score(candidate, &world);
+                let score = policy.score(candidate, &state.world);
                 candidate.score = Some(score);
             }
         }
@@ -55,8 +55,8 @@ fn main() {
         let selected = select_best(&candidates);
 
         println!("motion: {:?} falsifiers open: {}",
-            beacon.motion(&world),
-            beacon.falsifiers(&world).len());
+            beacon.motion(&state),
+            beacon.falsifiers(&state).len());
 
         use decision_record::DecisionRecord;
         let _record = DecisionRecord {
