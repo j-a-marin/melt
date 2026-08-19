@@ -89,7 +89,6 @@ real inputs, and each stage currently has one implementation:
 - `Constraint` has a single variant, `MinimumConfidence` — no spatial, temporal, or resource limits yet
 - `Weather`, `Wifi`, and `PowerGrid` observation payloads are defined but not yet consumed by candidate generation
 - `RescuePolicy` scores by action type and confidence; it doesn't yet consult world state
-- No test suite
 
 The near-term goal is a real search-and-rescue example driving the same pipeline from
 recorded sensor data.

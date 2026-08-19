@@ -23,13 +23,6 @@ impl WorldState {
             .insert(observation.source_id.clone(), observation);
 
     }
-    pub fn last_two(&self, source_id: &str) -> Option<(&Observation, &Observation)> {
-        let mut it = self.history.iter().rev().
-            filter(|o| o.source_id == source_id);
-        let newest = it.next()?;
-        let prior = it.next()?;
-        Some((prior, newest))
-    }
 
     pub fn derive_candidates(&self) -> Vec<CandidateAction> {
         let mut actions: Vec<CandidateAction> = Vec::new();

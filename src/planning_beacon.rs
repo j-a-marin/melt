@@ -32,7 +32,10 @@ impl Beacon for PlanningBeacon {
             .map(|w| classify_motion(w[0], w[1]))
             .collect();
 
-        let motion = classifications.last().copied().unwrap_or(Motion::Unassessed);
+        let motion = classifications
+            .last()
+            .copied()
+            .unwrap_or(Motion::Unassessed);
 
         let persistence = classifications
             .iter()
@@ -40,15 +43,13 @@ impl Beacon for PlanningBeacon {
             .take_while(|&&m| m == motion)
             .count() as u64;
 
-        let lineage: Vec<ObservationId> = world
-            .last_two(PRIMARY_SOURCE)
-            .map(|(prior, newest)| vec![ObservationId::of(prior), ObservationId::of(newest)])
-            .unwrap_or_default();
+        let lineage: Vec<ObservationId> = source_obs.iter().map(|o| ObservationId::of(o)).collect();
 
-        let confidence = match world.last_two(PRIMARY_SOURCE) {
-            Some((prior, newest)) => (prior.confidence + newest.confidence) / 2.0,
-            None => 0.0,
+        let confidence = match source_obs.as_slice() {
+            [.., prior, newest] => (prior.confidence + newest.confidence) / 2.0,
+            _ => 0.0,
         };
+
         PlanningState {
             latent: LatentState {
                 confidence,
@@ -63,7 +64,6 @@ impl Beacon for PlanningBeacon {
     fn motion(&self, state: &Self::State) -> Motion {
         state.latent.motion
     }
-
 
     fn exposures(&self, state: &Self::State) -> Vec<Self::Exposure> {
         Vec::new()
@@ -96,34 +96,33 @@ impl Beacon for PlanningBeacon {
     }
 }
 
-
 fn classify_motion(prior: &Observation, newest: &Observation) -> Motion {
     match (&prior.payload, &newest.payload) {
-            (
-                ObservationPayload::SurvivorSignal {
-                    strength: prior_strength,
-                },
-                ObservationPayload::SurvivorSignal {
-                    strength: newest_strength,
-                },
-            ) => {
-                if *newest_strength > *prior_strength + EPSILON {
-                    Motion::Strengthening
-                } else if *newest_strength < *prior_strength - EPSILON {
-                    Motion::Weakening
-                } else {
-                    Motion::Stable
-                }
+        (
+            ObservationPayload::SurvivorSignal {
+                strength: prior_strength,
+            },
+            ObservationPayload::SurvivorSignal {
+                strength: newest_strength,
+            },
+        ) => {
+            if *newest_strength > *prior_strength + EPSILON {
+                Motion::Strengthening
+            } else if *newest_strength < *prior_strength - EPSILON {
+                Motion::Weakening
+            } else {
+                Motion::Stable
             }
-            _ => {
-                if std::mem::discriminant(&prior.payload) != std::mem::discriminant(&newest.payload) {
-                    Motion::Discontinuous
-                } else {
-                    Motion::Unassessed
-                }
+        }
+        _ => {
+            if std::mem::discriminant(&prior.payload) != std::mem::discriminant(&newest.payload) {
+                Motion::Discontinuous
+            } else {
+                Motion::Unassessed
             }
         }
     }
+}
 
 pub struct PlanningState {
     pub latent: LatentState,
@@ -132,8 +131,8 @@ pub struct PlanningState {
 
 #[cfg(test)]
 mod tests {
-    use crate::observation::Observation;
     use super::*;
+    use crate::observation::Observation;
     #[test]
     fn motion_is_unassessed_with_no_observations() {
         let beacon = PlanningBeacon;
@@ -213,5 +212,48 @@ mod tests {
         let beacon = PlanningBeacon;
         let world = beacon.infer_state(&[obs(2, 0.80), obs(1, 0.40)]);
         assert_eq!(beacon.motion(&world), Motion::Strengthening)
+    }
+
+    #[test]
+    fn persistence_zero_with_no_observations() {
+        let beacon = PlanningBeacon;
+        let state = beacon.infer_state(&[]);
+        assert_eq!(state.latent.persistence, 0)
+    }
+
+    #[test]
+    fn persistence_resets_when_motion_changes() {
+        // classifications: [Strengthening, Strengthening, Weakening] -> run of 1
+        let beacon = PlanningBeacon;
+        let state = beacon.infer_state(&[
+            obs(1, 0.30),
+            obs(2, 0.60),
+            obs(3, 0.90),
+            obs(4, 0.40),
+        ]);
+        assert_eq!(state.latent.motion, Motion::Weakening);
+        assert_eq!(state.latent.persistence, 1);
+    }
+
+    #[test]
+    fn persistence_counts_only_the_unbroken_tail() {
+        // classifications: [S, W, S, S] -> tail run 2; a plain filter would count 3
+        let beacon = PlanningBeacon;
+        let state = beacon.infer_state(&[
+            obs(1, 0.30),
+            obs(2, 0.80),
+            obs(3, 0.40),
+            obs(4, 0.60),
+            obs(5, 0.90),
+        ]);
+        assert_eq!(state.latent.motion, Motion::Strengthening);
+        assert_eq!(state.latent.persistence, 2);
+    }
+
+    #[test]
+    fn persistence_zero_with_one_observation() {
+        let beacon = PlanningBeacon;
+        let state = beacon.infer_state(&[obs(1, 0.50)]);
+        assert_eq!(state.latent.persistence, 0);
     }
 }
